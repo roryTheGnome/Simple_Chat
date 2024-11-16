@@ -200,15 +200,15 @@ public class Server implements Runnable{
                     currentRoom="politics";
                     break;
                 case "/social/":
-                    scienceOnline.add(this);
+                    socialOnline.add(this);
                     currentRoom="social";
                     break;
                 case "/tech/":
-                    peopleOnline.add(this);
+                    techOnline.add(this);
                     currentRoom="tech";
                     break;
                 case "/crypto/":
-                    randomOnline.add(this);
+                    cryptoOnline.add(this);
                     currentRoom="crypto";
                     break;
             }
