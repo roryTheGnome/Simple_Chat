@@ -160,17 +160,17 @@ public class Server implements Runnable{
                         out.println("*all/room*    shows the list of people online in the room");
                         out.println("*all*         shows the list of all people online");
                     }else if (message.startsWith("*all*")){
-                        showEmAll(everyoneOnline);
+                        showEmAll(everyoneOnline,"Everyone Online: ");
                     }else if(message.startsWith("*all/room*")){
                         switch (currentRoom){
-                            case "politics": showEmAll(politicsOnline);break;
-                            case "science": showEmAll(scienceOnline);break;
-                            case "tech": showEmAll(techOnline);break;
-                            case "crypto": showEmAll(cryptoOnline);break;
-                            case "social": showEmAll(socialOnline);break;
-                            case "random": showEmAll(randomOnline);break;
-                            case "comedy": showEmAll(comedyOnline);break;
-                            case "home": showEmAll(peopleOnline);break;
+                            case "politics": showEmAll(politicsOnline,"Everyone in "+currentRoom+":");break;
+                            case "science": showEmAll(scienceOnline,"Everyone in "+currentRoom+":");break;
+                            case "tech": showEmAll(techOnline,"Everyone in "+currentRoom+":");break;
+                            case "crypto": showEmAll(cryptoOnline,"Everyone in "+currentRoom+":");break;
+                            case "social": showEmAll(socialOnline,"Everyone in "+currentRoom+":");break;
+                            case "random": showEmAll(randomOnline,"Everyone in "+currentRoom+":");break;
+                            case "comedy": showEmAll(comedyOnline,"Everyone in "+currentRoom+":");break;
+                            case "home": showEmAll(peopleOnline,"Everyone in "+currentRoom+":");break;
                         }
                     }else if (message.startsWith("*dm*")) {
                         out.println("Enter the nickname of the reciver: ");
@@ -293,8 +293,8 @@ public class Server implements Runnable{
             } catch (IOException e) {}
         }
 
-        public void showEmAll(ArrayList<ConnectionHandler> peopleList){
-            out.println("Everyone Online:");
+        public void showEmAll(ArrayList<ConnectionHandler> peopleList,String title){
+            out.println(title);
             for(ConnectionHandler c : peopleList){
                 out.println(c.nick);
             }
