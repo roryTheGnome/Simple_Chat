@@ -4,7 +4,10 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -66,9 +69,17 @@ public class Server implements Runnable{
         //https://www.geeksforgeeks.org/java-io-bufferedreader-class-java/
         private PrintWriter out;
         //https://www.geeksforgeeks.org/java-io-printwriter-class-java-set-1/
+        private List<String> bannedWords;
+
 
         public ConnectionHandler(Socket client){
             this.client = client;
+            try {
+                bannedWords = Files.readAllLines(Paths.get("C:\\Users\\lenovo\\OneDrive\\Desktop\\banned_words_list.txt"));
+            } catch (IOException e) {
+                System.out.println("Error loading banned words: " + e.getMessage());
+                bannedWords = List.of(); // Set an empty list if there's an error
+            }
         }
 
         @Override
@@ -93,7 +104,10 @@ public class Server implements Runnable{
                         System.out.println(nick+" is offline!");
                         killSwitch();
                     }
-                    else{//check here if the message includes banned words
+                    else if (containsBannedWords(message)) {
+                        out.println("Message has banned words and will not be sent.");
+                    }
+                    else{
                     broadcast(nick+": "+message);}
                     //add stuff here so that message can have other functions
                     // like talking to the server to make adjustments
@@ -103,6 +117,21 @@ public class Server implements Runnable{
                 killSwitch();
             }
 
+        }
+
+        private boolean containsBannedWords(String message) {
+            String regex = "[,\\.\\s]";
+            //https://www.w3schools.com/java/ref_string_split.asp
+            String[] words = message.split(regex);
+            for (String word : words) {
+                for (String bannedWord : bannedWords) {
+                    if (word.equalsIgnoreCase(bannedWord)) {
+                        System.out.println("user "+nick+" used one of the banned words: "+word);
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         public void sendMessage(String message){
