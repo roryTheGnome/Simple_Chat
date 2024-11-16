@@ -11,9 +11,16 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+/*current banned words:
+banned
+word
+say
+hi */
+
 public class Server implements Runnable{
 
     private ServerSocket Elysium;
+    private ArrayList<ConnectionHandler> everyoneOnline;
     private ArrayList<ConnectionHandler> peopleOnline;
     private ArrayList<ConnectionHandler> comedyOnline;
     private ArrayList<ConnectionHandler> scienceOnline;
@@ -28,6 +35,7 @@ public class Server implements Runnable{
 
 
     public Server(){
+        everyoneOnline = new ArrayList<>();
         peopleOnline = new ArrayList<>();
         comedyOnline = new ArrayList<>();
         scienceOnline = new ArrayList<>();
@@ -49,6 +57,7 @@ public class Server implements Runnable{
                 Socket client=Elysium.accept();
                 ConnectionHandler handler = new ConnectionHandler(client);
                 //peopleOnline.add(new ConnectionHandler(client));
+                everyoneOnline.add(handler);
                 peopleOnline.add(handler);
                 threadPool.execute(handler);
             }
@@ -71,8 +80,15 @@ public class Server implements Runnable{
             case "home": toSend = peopleOnline;break;
         }
 
-        for(ConnectionHandler c : toSend){
-            c.sendMessage(message);
+        if(room.equals("home")){
+            for(ConnectionHandler c : toSend){
+                c.sendMessage(nick+": "+message);
+            }
+        }
+        else{
+            for(ConnectionHandler c : toSend){
+                c.sendMessage(nick+"("+room+"): "+message);
+            }
         }
     }
 
@@ -125,7 +141,10 @@ public class Server implements Runnable{
                 //maybe create a file with user data like nick and password
                 System.out.println(nick+ " is in!"); //this one is for server
                 //maybe add a file for records??
-                broadcast(nick," is online!!!",currentRoom);
+                //broadcast(nick," is online!!!",currentRoom);
+                for(ConnectionHandler c : peopleOnline){
+                    c.sendMessage(nick+" is online");
+                }
                 String message=null;
                 while((message=in.readLine())!=null){
                     if(message.startsWith("*quit*")){
@@ -134,11 +153,40 @@ public class Server implements Runnable{
                         killSwitch();
                     } else if (message.startsWith("*openhelpdesk*")) {
                         out.println("COMMAND LIST");
-                        out.println("*exit*     exit");
-                        out.println("*help*     shows command list");
-                        out.println("*rooms*    shows room list");
-                        out.println("*dm*       direct messages");
-                    } else if (message.startsWith("*rooms*")) {
+                        out.println("*exit*        exit");
+                        out.println("*help*        shows command list");
+                        out.println("*rooms*       shows room list");
+                        out.println("*dm*          direct messages");
+                        out.println("*all/room*    shows the list of people online in the room");
+                        out.println("*all*         shows the list of all people online");
+                    }else if (message.startsWith("*all*")){
+                        showEmAll(everyoneOnline);
+                    }else if(message.startsWith("*all/room*")){
+                        switch (currentRoom){
+                            case "politics": showEmAll(politicsOnline);break;
+                            case "science": showEmAll(scienceOnline);break;
+                            case "tech": showEmAll(techOnline);break;
+                            case "crypto": showEmAll(cryptoOnline);break;
+                            case "social": showEmAll(socialOnline);break;
+                            case "random": showEmAll(randomOnline);break;
+                            case "comedy": showEmAll(comedyOnline);break;
+                            case "home": showEmAll(peopleOnline);break;
+                        }
+                    }else if (message.startsWith("*dm*")) {
+                        out.println("Enter the nickname of the reciver: ");
+                        String reciver = in.readLine();
+                        for(ConnectionHandler c : peopleOnline){
+                            if(c.nick.equals(reciver)){
+                                out.println("Enter your message: ");
+                                String dm=in.readLine();
+                                c.sendMessage(nick+"(dm): "+dm);
+                                break;
+                            }
+                            else{
+                                out.println("No such user with that nickname is online at the moment.");
+                            }
+                        }
+                    }else if (message.startsWith("*rooms*")) {
                         out.println("//           home");
                         out.println("/comedy/     comedy room");
                         out.println("/random/     random stuff room");
@@ -148,15 +196,13 @@ public class Server implements Runnable{
                         out.println("/tech/       tech room");
                         out.println("/crypto/     crypto room");
                     } else if (message.startsWith("/")) {
-                        //TODO room changes
                         switchRoom(message);
                     }
-                    if (containsBannedWords(message)) {
-                        out.println("Message has banned words and will not be sent.");
+                    else if (containsBannedWords(message)) {
+                        out.println("Message contains banned words and will not be sent.");
                     }
                     else{
                     broadcast(nick,message,currentRoom);}
-
                 }
             } catch (IOException e) {
                 killSwitch();
@@ -176,7 +222,7 @@ public class Server implements Runnable{
                 default: peopleOnline.remove(this); break;
             }
             out.println("You have left "+currentRoom+" room!");
-            System.out.println(nick+"left "+currentRoom+" room");
+            System.out.println(nick+" left "+currentRoom+" room");
 
             switch(message){
                 case "/comedy/":
@@ -215,7 +261,7 @@ public class Server implements Runnable{
 
             out.println("You have entered the "+currentRoom+" room!");
             broadcast(nick," has entered the room",currentRoom);
-            System.out.println(nick+"entered the "+currentRoom+" room");
+            System.out.println(nick+" entered the "+currentRoom+" room");
 
         }
 
@@ -235,15 +281,23 @@ public class Server implements Runnable{
         }
 
         public void sendMessage(String message){
-            out.println(nick+": "+message);
+            out.println(message);
         }
 
         public void killSwitch(){
             try {
                 in.close();
                 out.close();
+                everyoneOnline.remove(this);
                 client.close();
             } catch (IOException e) {}
+        }
+
+        public void showEmAll(ArrayList<ConnectionHandler> peopleList){
+            out.println("Everyone Online:");
+            for(ConnectionHandler c : peopleList){
+                out.println(c.nick);
+            }
         }
     }
 
