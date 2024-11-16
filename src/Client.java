@@ -69,8 +69,9 @@ public class Client implements Runnable {
                         in2.close();
                         killSwitch();
                         //break;//TODO added later
-                    }
-                    else{
+                    } else if (message.equals("*help*")) {
+                        out.println("*openhelpdesk*");
+                    } else{
                         out.println(message);
                     }
                 }
