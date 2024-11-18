@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -10,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.io.FileWriter;
 
 /*current banned words:
 banned
@@ -120,7 +118,8 @@ public class Server implements Runnable{
             this.client = client;
             this.currentRoom = "home";
             try {
-                bannedWords = Files.readAllLines(Paths.get("C:\\Users\\lenovo\\OneDrive\\Desktop\\banned_words_list.txt"));
+                bannedWords=Files.readAllLines(Paths.get("C:\\Users\\lenovo\\IdeaProjects\\utp_project2git\\src\\banned_words_list.txt"));
+                //bannedWords = Files.readAllLines(Paths.get("C:\\Users\\lenovo\\OneDrive\\Desktop\\banned_words_list.txt"));
             } catch (IOException e) {
                 System.out.println("Error loading banned words: " + e.getMessage());
                 bannedWords = List.of();
@@ -278,7 +277,17 @@ public class Server implements Runnable{
             for (String word : words) {
                 for (String bannedWord : bannedWords) {
                     if (word.equalsIgnoreCase(bannedWord)) {
-                        System.out.println("user "+nick+" used one of the banned words: "+word);
+                        String breachMessage="user "+nick+" used one of the banned words: "+word;
+
+                        try (FileWriter fileWriter = new FileWriter
+                                ("C:\\Users\\lenovo\\IdeaProjects\\utp_project2git\\src\\Rule_Breach_History.txt", true)) {
+                            fileWriter.write(breachMessage+"\n");
+                            System.out.println(breachMessage);
+                        } catch (IOException e) {
+                            System.out.println("Something went wrong");
+                            e.printStackTrace();
+                        }
+
                         return true;
                     }
                 }
