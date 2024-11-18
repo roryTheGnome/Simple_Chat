@@ -90,6 +90,12 @@ public class Server implements Runnable{
         }
     }
 
+    public void announcement(String nick, String message){
+        for(ConnectionHandler c : everyoneOnline){
+            c.sendMessage(nick+message);
+        }
+    }
+
     public void killSwitch(){
         try{
             b=false;
@@ -141,13 +147,12 @@ public class Server implements Runnable{
                 System.out.println(nick+ " is in!"); //this one is for server
                 //maybe add a file for records??
 
-                for(ConnectionHandler c : peopleOnline){
-                    c.sendMessage(nick+" is online");
-                }
+                announcement(nick," is online!!!");
+
                 String message=null;
                 while((message=in.readLine())!=null){
                     if(message.startsWith("*quit*")){
-                        broadcast(nick," is offline!!!",currentRoom);
+                        announcement(nick," is offline!!!");
                         System.out.println(nick+" is offline!");
                         killSwitch();
                     } else if (message.startsWith("*openhelpdesk*")) {
