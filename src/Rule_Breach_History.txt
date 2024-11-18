@@ -1,0 +1,6 @@
+Banned-Word Breach History:
+user test1 used one of the banned words: hi
+user test1 used one of the banned words: Hi
+user test1 used one of the banned words: HI
+user test used one of the banned words: hi
+user test123 used one of the banned words: hi
