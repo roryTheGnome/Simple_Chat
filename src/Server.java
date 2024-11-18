@@ -123,7 +123,7 @@ public class Server implements Runnable{
                 bannedWords = Files.readAllLines(Paths.get("C:\\Users\\lenovo\\OneDrive\\Desktop\\banned_words_list.txt"));
             } catch (IOException e) {
                 System.out.println("Error loading banned words: " + e.getMessage());
-                bannedWords = List.of(); // Set an empty list if there's an error
+                bannedWords = List.of();
             }
         }
 
@@ -141,7 +141,7 @@ public class Server implements Runnable{
                 //maybe create a file with user data like nick and password
                 System.out.println(nick+ " is in!"); //this one is for server
                 //maybe add a file for records??
-                //broadcast(nick," is online!!!",currentRoom);
+
                 for(ConnectionHandler c : peopleOnline){
                     c.sendMessage(nick+" is online");
                 }
@@ -175,16 +175,21 @@ public class Server implements Runnable{
                     }else if (message.startsWith("*dm*")) {
                         out.println("Enter the nickname of the reciver: ");
                         String reciver = in.readLine();
+                        boolean bb=true;
                         for(ConnectionHandler c : peopleOnline){
                             if(c.nick.equals(reciver)){
                                 out.println("Enter your message: ");
                                 String dm=in.readLine();
-                                c.sendMessage(nick+"(dm): "+dm);
-                                break;
+                                if (containsBannedWords(message)) {
+                                    out.println("Message contains banned words and will not be sent.");
+                                }
+                                else {c.sendMessage(nick+"(dm): "+dm);}
+                                bb=false;
+                                out.println("message sented succsessfully");
                             }
-                            else{
-                                out.println("No such user with that nickname is online at the moment.");
-                            }
+                        }
+                        if(bb){
+                            out.println("No such user with that nick is online at the moment");
                         }
                     }else if (message.startsWith("*rooms*")) {
                         out.println("//           home");
@@ -223,6 +228,7 @@ public class Server implements Runnable{
             }
             out.println("You have left "+currentRoom+" room!");
             System.out.println(nick+" left "+currentRoom+" room");
+            broadcast(nick,nick+"has left the room!",currentRoom);
 
             switch(message){
                 case "/comedy/":
@@ -280,9 +286,7 @@ public class Server implements Runnable{
             return false;
         }
 
-        public void sendMessage(String message){
-            out.println(message);
-        }
+        public void sendMessage(String message){out.println(message);}
 
         public void killSwitch(){
             try {
