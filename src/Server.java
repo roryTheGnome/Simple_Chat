@@ -91,6 +91,49 @@ public class Server implements Runnable{
         }
     }
 
+    public void broadcastBut(String nick, String message,String room,ArrayList<String> enemyList){
+        ArrayList<ConnectionHandler> toSend = new ArrayList<>();
+
+        switch (room){
+            case "politics": toSend = politicsOnline;break;
+            case "science": toSend = scienceOnline;break;
+            case "tech": toSend = techOnline;break;
+            case "crypto": toSend = cryptoOnline;break;
+            case "social": toSend = socialOnline;break;
+            case "random": toSend = randomOnline;break;
+            case "comedy": toSend = comedyOnline;break;
+            case "home": toSend = peopleOnline;break;
+            case "all": toSend=everyoneOnline;break;
+        }
+
+        for (ConnectionHandler c : toSend) {
+            // Check if the current user's nickname is NOT in the enemyList
+            if (!enemyList.contains(c.nick)) {
+                if (room.equals("home")) {
+                    c.sendMessage(nick + "(secret): " + message);
+                } else {
+                    c.sendMessage(nick + "(" + room + ", secret): " + message);
+                }
+            }
+        }
+
+        /*if(room.equals("home")){
+            for(ConnectionHandler c : toSend){
+                int i=0;
+                for(String s:enemyList){
+                    if(c.nick.equals(s)){i++;}
+                }
+                if(i==0){
+                    c.sendMessage(nick+"(secrect): "+message);
+                }
+            }
+        }else{
+            for(ConnectionHandler c : toSend){
+                c.sendMessage(nick+"("+room+",secret): "+message);
+            }
+        }*/
+    }
+
     public void announcement(String nick, String message){
         for(ConnectionHandler c : everyoneOnline){
             c.sendMessage(nick+message);
@@ -164,6 +207,7 @@ public class Server implements Runnable{
                         out.println("*rooms*       shows room list");
                         out.println("*dm*          direct messages");
                         out.println("*mdm*         direct messages to multiple user");
+                        out.println("*but*         send message to all but xxxx");  //TODO
                         out.println("*all/room*    shows the list of people online in the room");
                         out.println("*all*         shows the list of all people online");
                     }else if (message.startsWith("*all*")){
@@ -195,6 +239,32 @@ public class Server implements Runnable{
                             out.println("Undefined answer.");
                         }
 
+                    }else if(message.startsWith("*but*")){
+                        out.println("Enter your message: ");
+                        String multiMessage = in.readLine();
+                        if (containsBannedWords(multiMessage)) {
+                            out.println("Message contains banned words and will not be sent.");
+                        }else{
+                            ArrayList<String> enemyList=new ArrayList<>();
+                            boolean bb=true;
+                            while(bb){
+                                out.println("Enter the nickname of the reciver: \n Enter [0] to stop adding recivers");
+                                String enemy = in.readLine();
+                                if(enemy.equals("0")){
+                                    bb=false;
+                                } else{
+                                    enemyList.add(enemy);
+                                }
+                            }
+                            out.println("Enter [1] to set the reciver group as everybody online");
+                            String reciverG=in.readLine();
+                            if (reciverG.equals("1")){
+                                broadcastBut(nick,multiMessage,"all",enemyList);
+                            }
+                            else{
+                                broadcastBut(nick,multiMessage,currentRoom,enemyList);
+                            }
+                        }
                     }else if(message.startsWith("*mdm*")){
                         out.println("Enter your message: ");
                         String multiMessage = in.readLine();
@@ -482,10 +552,7 @@ public class Server implements Runnable{
 }
 
 //TODO show banned words in helpdesk            DONE
-//TODO mute announcements
-//TODO group chat
-/*
-try enter name 0 if done*/
+//TODO group chat                               DONE
 //TODO make announcements                       DONE
 //TODO make announcemnets from server
 //TODO send all but *****
