@@ -163,6 +163,7 @@ public class Server implements Runnable{
                         out.println("*bList*       shows the banned words list");
                         out.println("*rooms*       shows room list");
                         out.println("*dm*          direct messages");
+                        out.println("*mdm*         direct messages to multiple user");
                         out.println("*all/room*    shows the list of people online in the room");
                         out.println("*all*         shows the list of all people online");
                     }else if (message.startsWith("*all*")){
@@ -194,6 +195,33 @@ public class Server implements Runnable{
                             out.println("Undefined answer.");
                         }
 
+                    }else if(message.startsWith("*mdm*")){
+                        out.println("Enter your message: ");
+                        String multiMessage = in.readLine();
+                        if (containsBannedWords(multiMessage)) {
+                            out.println("Message contains banned words and will not be sent.");
+                        }else{
+                            boolean bb=true;
+                            boolean bbb=true;
+                            while(bb){
+                                out.println("Enter the nickname of the reciver: \n Enter [0] to stop adding recivers");
+                                String reciver = in.readLine();
+                                if(reciver.equals("0")){
+                                    bb=false;
+                                } else{
+                                    for(ConnectionHandler c:peopleOnline){
+                                        if(c.nick.equals(reciver)){
+                                            c.sendMessage(nick+"(dm): "+multiMessage);
+                                            bbb=false;
+                                        }
+                                    }
+                                    if(bbb){
+                                        out.println("No such user is online at the moment");
+                                    }
+                                }
+
+                            }
+                        }
                     }else if (message.startsWith("*dm*")) {
                         out.println("Enter the nickname of the reciver: ");
                         String reciver = in.readLine();
