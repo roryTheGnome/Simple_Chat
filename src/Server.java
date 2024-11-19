@@ -192,6 +192,7 @@ public class Server implements Runnable{
                 //maybe add a file for records??
 
                 announcement(nick," is online!!!");
+                out.println("Enter *help* inn order to get to the help desk");
 
                 String message=null;
                 while((message=in.readLine())!=null){
@@ -555,5 +556,5 @@ public class Server implements Runnable{
 //TODO group chat                               DONE
 //TODO make announcements                       DONE
 //TODO make announcemnets from server
-//TODO send all but *****
+//TODO send all but *****                       DONE
 
