@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.io.FileWriter;
@@ -30,7 +31,7 @@ public class Server implements Runnable{
     private ExecutorService threadPool;
     //https://www.geeksforgeeks.org/java-util-concurrent-executorservice-interface-with-examples/
     private boolean b;
-
+    Scanner scnn;
 
     public Server(){
         everyoneOnline = new ArrayList<>();
@@ -43,6 +44,7 @@ public class Server implements Runnable{
         techOnline = new ArrayList<>();
         cryptoOnline = new ArrayList<>();
         b = true;
+        scnn=new Scanner(System.in);
     }
 
     @Override
@@ -82,8 +84,7 @@ public class Server implements Runnable{
             for(ConnectionHandler c : toSend){
                 c.sendMessage(nick+": "+message);
             }
-        }
-        else{
+        } else{
             for(ConnectionHandler c : toSend){
                 c.sendMessage(nick+"("+room+"): "+message);
             }
@@ -159,6 +160,7 @@ public class Server implements Runnable{
                         out.println("COMMAND LIST");
                         out.println("*exit*        exit");
                         out.println("*help*        shows command list");
+                        out.println("*bList*       shows the banned words list");
                         out.println("*rooms*       shows room list");
                         out.println("*dm*          direct messages");
                         out.println("*all/room*    shows the list of people online in the room");
@@ -176,6 +178,22 @@ public class Server implements Runnable{
                             case "comedy": showEmAll(comedyOnline,"Everyone in "+currentRoom+":");break;
                             case "home": showEmAll(peopleOnline,"Everyone in "+currentRoom+":");break;
                         }
+                    }else if(message.startsWith("*bList*")){
+                        out.println("List of banned words are gonna be visible! Are you sure?");
+                        out.println("[0] for no , [1] for yes");
+                        String answer=in.readLine();
+                        if(answer.equals("1")){
+                            out.println("Banned Words:");
+                            for(String s: bannedWords){
+                                out.println(s);
+                            }
+                        } else if (answer.equals("0")) {
+                            out.println("Action canceled.");
+                        }
+                        else{
+                            out.println("Undefined answer.");
+                        }
+
                     }else if (message.startsWith("*dm*")) {
                         out.println("Enter the nickname of the reciver: ");
                         String reciver = in.readLine();
@@ -250,6 +268,14 @@ public class Server implements Runnable{
                 case "/random/":
                     randomOnline.add(this);
                     currentRoom="random";
+                    for(ConnectionHandler c : randomOnline){
+                        c.sendMessage("GOT RICK ROLLED : \n"+"Never gonna give you up\n" +
+                                "Never gonna let you down\n" +
+                                "Never gonna run around and desert you\n" +
+                                "Never gonna make you cry\n" +
+                                "Never gonna say goodbye\n" +
+                                "Never gonna tell a lie and hurt you");
+                    }
                     break;
                 case "/politics/":
                     politicsOnline.add(this);
@@ -324,3 +350,13 @@ public class Server implements Runnable{
         Elysium.run();
     }
 }
+
+//TODO show banned words in helpdesk            DONE
+//TODO mute announcements
+//TODO group chat
+/*
+try enter name 0 if done*/
+//TODO make announcements                       DONE
+//TODO make announcemnets from server
+//TODO send all but *****
+
