@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.io.FileWriter;
@@ -30,7 +31,7 @@ public class Server implements Runnable{
     private ExecutorService threadPool;
     //https://www.geeksforgeeks.org/java-util-concurrent-executorservice-interface-with-examples/
     private boolean b;
-
+    Scanner scnn;
 
     public Server(){
         everyoneOnline = new ArrayList<>();
@@ -43,6 +44,7 @@ public class Server implements Runnable{
         techOnline = new ArrayList<>();
         cryptoOnline = new ArrayList<>();
         b = true;
+        scnn=new Scanner(System.in);
     }
 
     @Override
@@ -82,12 +84,54 @@ public class Server implements Runnable{
             for(ConnectionHandler c : toSend){
                 c.sendMessage(nick+": "+message);
             }
-        }
-        else{
+        } else{
             for(ConnectionHandler c : toSend){
                 c.sendMessage(nick+"("+room+"): "+message);
             }
         }
+    }
+
+    public void broadcastBut(String nick, String message,String room,ArrayList<String> enemyList){
+        ArrayList<ConnectionHandler> toSend = new ArrayList<>();
+
+        switch (room){
+            case "politics": toSend = politicsOnline;break;
+            case "science": toSend = scienceOnline;break;
+            case "tech": toSend = techOnline;break;
+            case "crypto": toSend = cryptoOnline;break;
+            case "social": toSend = socialOnline;break;
+            case "random": toSend = randomOnline;break;
+            case "comedy": toSend = comedyOnline;break;
+            case "home": toSend = peopleOnline;break;
+            case "all": toSend=everyoneOnline;break;
+        }
+
+        for (ConnectionHandler c : toSend) {
+            // Check if the current user's nickname is NOT in the enemyList
+            if (!enemyList.contains(c.nick)) {
+                if (room.equals("home")) {
+                    c.sendMessage(nick + "(secret): " + message);
+                } else {
+                    c.sendMessage(nick + "(" + room + ", secret): " + message);
+                }
+            }
+        }
+
+        /*if(room.equals("home")){
+            for(ConnectionHandler c : toSend){
+                int i=0;
+                for(String s:enemyList){
+                    if(c.nick.equals(s)){i++;}
+                }
+                if(i==0){
+                    c.sendMessage(nick+"(secrect): "+message);
+                }
+            }
+        }else{
+            for(ConnectionHandler c : toSend){
+                c.sendMessage(nick+"("+room+",secret): "+message);
+            }
+        }*/
     }
 
     public void announcement(String nick, String message){
@@ -148,6 +192,7 @@ public class Server implements Runnable{
                 //maybe add a file for records??
 
                 announcement(nick," is online!!!");
+                out.println("Enter *help* inn order to get to the help desk");
 
                 String message=null;
                 while((message=in.readLine())!=null){
@@ -159,8 +204,11 @@ public class Server implements Runnable{
                         out.println("COMMAND LIST");
                         out.println("*exit*        exit");
                         out.println("*help*        shows command list");
+                        out.println("*bList*       shows the banned words list");
                         out.println("*rooms*       shows room list");
                         out.println("*dm*          direct messages");
+                        out.println("*mdm*         direct messages to multiple user");
+                        out.println("*but*         send message to all but xxxx");  //TODO
                         out.println("*all/room*    shows the list of people online in the room");
                         out.println("*all*         shows the list of all people online");
                     }else if (message.startsWith("*all*")){
@@ -175,6 +223,75 @@ public class Server implements Runnable{
                             case "random": showEmAll(randomOnline,"Everyone in "+currentRoom+":");break;
                             case "comedy": showEmAll(comedyOnline,"Everyone in "+currentRoom+":");break;
                             case "home": showEmAll(peopleOnline,"Everyone in "+currentRoom+":");break;
+                        }
+                    }else if(message.startsWith("*bList*")){
+                        out.println("List of banned words are gonna be visible! Are you sure?");
+                        out.println("[0] for no , [1] for yes");
+                        String answer=in.readLine();
+                        if(answer.equals("1")){
+                            out.println("Banned Words:");
+                            for(String s: bannedWords){
+                                out.println(s);
+                            }
+                        } else if (answer.equals("0")) {
+                            out.println("Action canceled.");
+                        }
+                        else{
+                            out.println("Undefined answer.");
+                        }
+
+                    }else if(message.startsWith("*but*")){
+                        out.println("Enter your message: ");
+                        String multiMessage = in.readLine();
+                        if (containsBannedWords(multiMessage)) {
+                            out.println("Message contains banned words and will not be sent.");
+                        }else{
+                            ArrayList<String> enemyList=new ArrayList<>();
+                            boolean bb=true;
+                            while(bb){
+                                out.println("Enter the nickname of the reciver: \n Enter [0] to stop adding recivers");
+                                String enemy = in.readLine();
+                                if(enemy.equals("0")){
+                                    bb=false;
+                                } else{
+                                    enemyList.add(enemy);
+                                }
+                            }
+                            out.println("Enter [1] to set the reciver group as everybody online");
+                            String reciverG=in.readLine();
+                            if (reciverG.equals("1")){
+                                broadcastBut(nick,multiMessage,"all",enemyList);
+                            }
+                            else{
+                                broadcastBut(nick,multiMessage,currentRoom,enemyList);
+                            }
+                        }
+                    }else if(message.startsWith("*mdm*")){
+                        out.println("Enter your message: ");
+                        String multiMessage = in.readLine();
+                        if (containsBannedWords(multiMessage)) {
+                            out.println("Message contains banned words and will not be sent.");
+                        }else{
+                            boolean bb=true;
+                            boolean bbb=true;
+                            while(bb){
+                                out.println("Enter the nickname of the reciver: \n Enter [0] to stop adding recivers");
+                                String reciver = in.readLine();
+                                if(reciver.equals("0")){
+                                    bb=false;
+                                } else{
+                                    for(ConnectionHandler c:peopleOnline){
+                                        if(c.nick.equals(reciver)){
+                                            c.sendMessage(nick+"(dm): "+multiMessage);
+                                            bbb=false;
+                                        }
+                                    }
+                                    if(bbb){
+                                        out.println("No such user is online at the moment");
+                                    }
+                                }
+
+                            }
                         }
                     }else if (message.startsWith("*dm*")) {
                         out.println("Enter the nickname of the reciver: ");
@@ -250,6 +367,116 @@ public class Server implements Runnable{
                 case "/random/":
                     randomOnline.add(this);
                     currentRoom="random";
+                    for(ConnectionHandler c : randomOnline){
+                        c.sendMessage("Never gonna give you up\n" +
+                                "Never gonna let you down\n" +
+                                "Never gonna run around and desert you\n" +
+                                "Never gonna make you cry\n" +
+                                "Never gonna say goodbye\n" +
+                                "Never gonna tell a lie and hurt you");
+                        try {
+                            Thread.sleep(3 * 1000);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                        c.sendMessage("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣀⣀⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢶⣾⣷⣾⣿⣿⣿⣿⣿⣿⣷⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⠿⠿⢿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠀⠁⠁⠈⠁⠀⠀⠀⠀⠀⢹⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⠀⢀⣀⣀⠀⠀⠀⠀⠀⠀⢸⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⢹⣿⣿⡆⠀⠈⠥⠀⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠐⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠂⢽⠗⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣶⣶⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⢿⡌⠀⠀⠰⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⡆⠀⣿⣾⣶⣆⠀⠀⢨⡄⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣤⣶⣾⣿⣿⣿⡈⠛⢿⣿⣿⡄⠀⢸⢊⣀⠈⣿⣿⣶⣶⣤⣄⣀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⢀⣠⣴⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠈⠀⠉⠁⠀⠀⠄⠀⠀⣿⣿⣿⣿⣿⣿⣿⣷⣦⣄⠀\n" +
+                                "⠀⠀⠀⠀⠀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇\n" +
+                                "⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣤⡄⠲⠤⢤⣤⡄⠀⠀⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧\n" +
+                                "⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣏⣉⣀⣐⠒⠒⠠⠰⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿\n" +
+                                "⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠤⠤⠉⣉⣉⢸⣓⡲⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿\n" +
+                                "⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠒⠒⠒⠠⠤⢼⣭⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿\n" +
+                                "⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣏⣉⣙⠛⠒⢸⠶⣦⣬⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿\n" +
+                                "⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡧⠤⠬⢍⣉⣹⣛⣓⣲⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇\n" +
+                                "⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡒⠲⠶⠶⡿⣽⣿⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇\n" +
+                                "⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣭⣍⣙⣛⣏⣷⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠏\n" +
+                                "⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠦⠤⣬⣭⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠀\n" +
+                                "⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣙⣟⣿⣷⣷⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆\n" +
+                                "⠀⣠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠛⠙⠃\n" +
+                                "⠸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣿⣿⣿⣿⣿⣿⣿⣿⣿⠂⠀⠀⠀\n" +
+                                "⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀\n" +
+                                "⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠛⠛⠛⠁⡇⠟⢿⣿⣿⣿⣿⣿⣿⣿⣧⡀⠀⠀");
+                        try {
+                            Thread.sleep(3 * 1000);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                        c.sendMessage("⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⣘⣩⣅⣤⣤⣄⣠⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠄⢈⣻⣿⣿⢷⣾⣭⣯⣯⡳⣤⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣧⠻⠿⡻⢿⠿⡾⣽⣿⣳⣧⡷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢰⡶⢈⠐⡀⠀⠀⠁⠀⠀⠀⠈⢿⡽⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢫⢅⢠⣥⣐⡀⠀⠀⠀⠀⠀⠀⢸⢳⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠠⠆⠡⠱⠒⠖⣙⠂⠈⠵⣖⡂⠄⢸⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⠆⠀⠰⡈⢆⣑⠂⠀⠀⠀⠀⠀⠏⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢗⠀⠱⡈⢆⠙⠉⠃⠀⠀⠀⠀⠃⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠦⡡⢘⠩⠯⠒⠀⠀⠀⢀⠐⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡄⢔⡢⢡⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⢆⠸⡁⠋⠃⠁⠀⢀⢠⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⡰⠌⣒⠡⠄⠀⢀⠔⠁⣸⣿⣷⣤⣀⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⣐⣤⡄⠀⠀⠘⢚⣒⢂⠇⣜⠒⠉⠀⢀⣿⣿⣿⣿⣿⣿⣿⣷⣶⣶⣦⣔⣀⢄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⡀⢀⢠⣤⣶⣿⣿⣿⡆⠀⠀⠐⡂⠌⠐⠝⠀⠀⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣤⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⢨⣶⣿⣿⣿⣿⣿⣿⣿⣿⣤⡶⢐⡑⣊⠀⡴⢤⣀⣀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⠀⠷⡈⠀⠶⢶⣰⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣉⠑⠚⣙⡒⠒⠲⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡁⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡷⠶⠀⠀⠤⣬⣍⣹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣛⣙⠀⢠⠲⠖⠶⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣭⣰⢘⣙⣛⣲⣿⣿⣿⣿⡿⡻⠿⠿⠿⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀\n" +
+                                "⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠶⢾⡠⢤⣭⣽⣿⣿⣿⣿⡟⣱⠦⠄⠤⠐⡄⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣤⡀⠀\n" +
+                                "⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡛⣻⡕⠶⠶⣿⣿⣿⣿⣿⣿⣗⣎⠒⣀⠃⡐⢀⠙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀\n" +
+                                "⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣭⣹⣏⣛⣛⣿⣿⣿⣿⣿⣿⣿⣞⣍⣉⢉⠰⠀⠠⢹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠅\n" +
+                                "⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠶⢼⡧⢤⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣣⣡⣛⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣅\n" +
+                                "⡿⣷⣽⡿⠛⠋⠉⣉⡐⠶⣾⣾⣟⣻⡕⠶⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣹⣫⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠗\n" +
+                                "⢸⣿⣟⣥⡶⢘⡻⢶⡹⣛⣼⣿⣯⣽⢯⣙⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠿⣿⣿⣿⣿⣿⣿⡿⠿⠟⠁⠀\n" +
+                                "⠘⢟⣾⣿⣿⣚⠷⣳⢳⣫⣽⣿⣛⣾⡷⢾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆⠀⠀⠁⠀⠈⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠙⢋⣿⣿⣯⣙⣯⣵⣿⣿⣯⣽⣟⣻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡯⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠉⠛⢻⠟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣟⡟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⣡⣿⣿⣿⣿⡗⣮⢻⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
+                        try {
+                            Thread.sleep(3 * 1000);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+
+                        c.sendMessage("⠉⠁⠈⠀⠀⠀⠀⠀⠀⠀⠀⠈⠀⠉⠉⠉⢉⡩⡍⣩⢿⣿⣿⣿⣿⣿⡿⣿⣿⡿⣇⡄⠀⠀⠈⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠾⢳⣯⣾⣿⠿⣿⣿⣿⣿⣿⣿⣿⣿⡬⠄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⣲⣾⡛⢥⡒⢄⠀⠀⠀⠀⠈⠉⢿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣸⣿⣿⣐⣣⣜⣢⡁⢈⡴⠄⠀⠀⢈⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡸⢹⣿⣡⢎⣽⣭⣿⣻⣇⢿⣶⣦⣄⢨⣿⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡔⣷⣿⠀⣨⡟⣄⢢⡿⢭⡇⠈⠛⠛⠎⣹⠏⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣻⣼⣇⠻⣸⢸⢻⣼⣿⣤⡤⡄⠀⢀⡻⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠻⢻⡔⢢⣙⣮⣽⣤⣆⡀⠃⠀⣤⡿⠅⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢨⢻⡰⢌⡹⢿⣍⠿⠛⢠⡼⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠐⢸⡿⡇⢮⢼⣁⠉⠀⢠⡌⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡘⣸⣸⣑⠎⡶⡭⠗⢋⠁⠴⣻⣦⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡠⡴⡈⣼⣭⣭⡯⣷⡰⡈⢆⣩⣞⠐⣿⣿⣿⣖⣢⣤⠄⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⢀⣲⣽⣶⣇⠥⡉⣿⣏⢿⡇⣯⢗⣩⣶⡟⠊⢘⣿⣿⣿⣿⣿⣾⣿⣶⣭⣿⣽⣒⣤⣀⡀⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⢀⠄⣀⣪⣴⣿⣿⣿⣿⣿⡇⣄⣿⣿⣴⣇⣟⣾⠟⠋⠀⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⣾⣷⣿⣿⣿⣿⣿⣿⣿⣿⡐⠸⣿⣿⠿⢷⣋⠀⠀⠀⢠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣭⠛⢛⣟⣛⣛⠒⠲⠶⣿⣿⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠿⠀⢨⡯⣭⣭⣽⣟⣻⣿⣿⣿⣿⣿⣿⣿⣿⡷⣌⣿⣿⣿⣿⣿⣿⣿⠏⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠈⠰⡷⠶⠶⢦⣬⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⢿⣿⠟⠃⣹⣿⣿⡀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⣶⡝⠛⠛⠛⠛⢳⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⣾⣧⠚⢳⣿⣿⡟⠀⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣟⣛⣛⣛⠶⠶⠾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⡷⢾⣦⡜⣿⣿⣷⡄⠀⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣯⣽⣯⣭⣍⣉⣛⣛⣛⣿⣿⣿⣿⣿⣿⣿⣿⣿⢷⣿⢴⣨⢹⣿⣿⣿⣿⣦⠀⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢿⡷⢶⣾⣯⣭⣭⣭⣿⣿⣿⣿⣿⣿⣿⣿⣍⡎⢃⠘⣉⢸⣿⣿⣿⣿⣿⣆⠀⠀\n" +
+                                "⠀⠀⠀⠀⠀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣻⣿⣶⠶⠶⠶⢾⣯⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣿⣦⣿⣿⣿⣿⣿⣿⣿⡆⠀\n" +
+                                "⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢿⣏⣛⣛⣛⣟⣻⠶⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀\n" +
+                                "⠀⠀⠀⠀⠀⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢼⡿⡿⣿⣭⣯⣽⣟⣛⣟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⠆");
+                        c.sendMessage("YOU'VE BEEN RICK ROLLED");
+
+                    }
                     break;
                 case "/politics/":
                     politicsOnline.add(this);
@@ -324,3 +551,10 @@ public class Server implements Runnable{
         Elysium.run();
     }
 }
+
+//TODO show banned words in helpdesk            DONE
+//TODO group chat                               DONE
+//TODO make announcements                       DONE
+//TODO make announcemnets from server
+//TODO send all but *****                       DONE
+
