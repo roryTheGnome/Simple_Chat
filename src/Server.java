@@ -53,6 +53,11 @@ public class Server implements Runnable{
         try{
             Elysium = new ServerSocket(29991);
             threadPool= Executors.newCachedThreadPool();
+
+            InputHandler serverTalks=new InputHandler();
+            Thread serverTalksThread= new Thread(serverTalks);
+            serverTalksThread.start();
+
             while(b){
                 Socket client=Elysium.accept();
                 ConnectionHandler handler = new ConnectionHandler(client);
@@ -349,7 +354,7 @@ public class Server implements Runnable{
             }
             out.println("You have left "+currentRoom+" room!");
             System.out.println(nick+" left "+currentRoom+" room");
-            broadcast(nick,nick+"has left the room!",currentRoom);
+            broadcast(nick," has left the room!",currentRoom);
 
             switch(message){
                 case "/comedy/":
@@ -545,6 +550,28 @@ public class Server implements Runnable{
             }
         }
     }
+    class InputHandler implements Runnable{
+
+        @Override
+        public void run() {
+            try{
+                Scanner scnn=new Scanner(System.in);
+                while(b){
+                    System.out.println("Awaiting input...");
+                    String message=scnn.nextLine();
+                    if(message.equals("*kill*")) {
+                        scnn.close();
+                        killSwitch();
+                        //break;//TODO added later
+                    }else{
+                        announcement("!SERVER ANNOUNCEMENT!: ",message);
+                    }
+                }
+            } catch (Exception e) {
+                killSwitch();
+            }
+        }
+    }
 
     public static void main(String[] args) {
         Server Elysium = new Server();
@@ -555,6 +582,6 @@ public class Server implements Runnable{
 //TODO show banned words in helpdesk            DONE
 //TODO group chat                               DONE
 //TODO make announcements                       DONE
-//TODO make announcemnets from server
+//TODO make announcemnets from server           DONE
 //TODO send all but *****                       DONE
 
