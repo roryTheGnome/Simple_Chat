@@ -50,8 +50,16 @@ public class Server implements Runnable{
     @Override
     public void run() {
 
+        String socketStr = null;
+        try {
+            socketStr = Files.readString(Paths.get("C:\\Users\\lenovo\\IdeaProjects\\utp_project2git\\src\\Server_Socket.txt")).trim();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        int port = Integer.parseInt(socketStr);
         try{
-            Elysium = new ServerSocket(29991);
+            Elysium = new ServerSocket(port);
             threadPool= Executors.newCachedThreadPool();
 
             InputHandler serverTalks=new InputHandler();
@@ -178,7 +186,6 @@ public class Server implements Runnable{
                 //bannedWords = Files.readAllLines(Paths.get("C:\\Users\\lenovo\\OneDrive\\Desktop\\banned_words_list.txt"));
             } catch (IOException e) {
                 System.out.println("Error loading banned words: " + e.getMessage());
-                bannedWords = List.of();
             }
         }
 
