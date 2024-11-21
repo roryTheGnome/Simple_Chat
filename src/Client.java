@@ -11,6 +11,7 @@ public class Client implements Runnable {
     private String nick;
     private BufferedReader in;
     private PrintWriter out;
+    private BufferedReader userInput;
     private boolean b;
 
     @Override
@@ -21,24 +22,18 @@ public class Client implements Runnable {
             in = new BufferedReader(new InputStreamReader(user.getInputStream()));
             b=true;
 
-            //TODO added later
             System.out.println(in.readLine());
-            BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in));
+            userInput = new BufferedReader(new InputStreamReader(System.in));
             nick = userInput.readLine();
             out.println(nick);
-            //TODO added later
-
-
 
             InputHandler input=new InputHandler();
             Thread thread=new Thread(input);
             thread.start();
 
             String m=null;
-            //String m = in.ReadLine();
             while((m=in.readLine())!=null){
                 System.out.println(m);
-                //m=in.readLine();
             }
 
         }catch(IOException e){
@@ -60,17 +55,13 @@ public class Client implements Runnable {
         @Override
         public void run() {
             try{
-                BufferedReader in2=new BufferedReader(new InputStreamReader(System.in));
                 while(b){
-                    String message=in2.readLine();
-                    if(message.equals("*exit*")){
-                        out.println("*quit*");
-                        in2.close();
+                    String message=userInput.readLine();
+                    if(message.equals("*exit*")) {
+                        out.println(message);
+                        userInput.close();
                         killSwitch();
-                        //break;//TODO added later
-                    } else if (message.equals("*help*")) {
-                        out.println("*openhelpdesk*");
-                    } else{
+                    }else{
                         out.println(message);
                     }
                 }

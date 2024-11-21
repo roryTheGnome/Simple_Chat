@@ -52,7 +52,7 @@ public class Server implements Runnable{
 
         String socketStr = null;
         try {
-            socketStr = Files.readString(Paths.get("C:\\Users\\lenovo\\IdeaProjects\\utp_project2git\\src\\Server_Socket.txt")).trim();
+            socketStr = Files.readString(Paths.get("src\\Server_Socket.txt")).trim();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -69,7 +69,6 @@ public class Server implements Runnable{
             while(b){
                 Socket client=Elysium.accept();
                 ConnectionHandler handler = new ConnectionHandler(client);
-                //peopleOnline.add(new ConnectionHandler(client));
                 everyoneOnline.add(handler);
                 peopleOnline.add(handler);
                 threadPool.execute(handler);
@@ -120,7 +119,6 @@ public class Server implements Runnable{
         }
 
         for (ConnectionHandler c : toSend) {
-            // Check if the current user's nickname is NOT in the enemyList
             if (!enemyList.contains(c.nick)) {
                 if (room.equals("home")) {
                     c.sendMessage(nick + "(secret): " + message);
@@ -129,22 +127,6 @@ public class Server implements Runnable{
                 }
             }
         }
-
-        /*if(room.equals("home")){
-            for(ConnectionHandler c : toSend){
-                int i=0;
-                for(String s:enemyList){
-                    if(c.nick.equals(s)){i++;}
-                }
-                if(i==0){
-                    c.sendMessage(nick+"(secrect): "+message);
-                }
-            }
-        }else{
-            for(ConnectionHandler c : toSend){
-                c.sendMessage(nick+"("+room+",secret): "+message);
-            }
-        }*/
     }
 
     public void announcement(String nick, String message){
@@ -182,7 +164,7 @@ public class Server implements Runnable{
             this.client = client;
             this.currentRoom = "home";
             try {
-                bannedWords=Files.readAllLines(Paths.get("C:\\Users\\lenovo\\IdeaProjects\\utp_project2git\\src\\banned_words_list.txt"));
+                bannedWords=Files.readAllLines(Paths.get("src/banned_words_list.txt"));
                 //bannedWords = Files.readAllLines(Paths.get("C:\\Users\\lenovo\\OneDrive\\Desktop\\banned_words_list.txt"));
             } catch (IOException e) {
                 System.out.println("Error loading banned words: " + e.getMessage());
@@ -207,11 +189,11 @@ public class Server implements Runnable{
 
                 String message=null;
                 while((message=in.readLine())!=null){
-                    if(message.startsWith("*quit*")){
+                    if(message.startsWith("*exit*")){
                         announcement(statue+nick," is offline!!!");
                         System.out.println(nick+" is offline!");
                         killSwitch();
-                    } else if (message.startsWith("*openhelpdesk*")) {
+                    } else if (message.startsWith("*help*")) {
                         out.println("COMMAND LIST");
                         out.println("*exit*        exit");
                         out.println("*st*          change your statue");
@@ -225,7 +207,7 @@ public class Server implements Runnable{
                         out.println("*all*         shows the list of all people online");
                     }else if(message.startsWith("*st*")) {
                         out.println("Statue List:");
-                        out.println("[0] for happy \n [1] for netural " +
+                        out.println(" [0] for happy \n [1] for netural " +
                                 "\n [2] for bored  \n [3] for tired " +
                                 "\n [4] for duck face \n [5] for confused" +
                                 "\n [6] for cool");
@@ -553,7 +535,7 @@ public class Server implements Runnable{
                         String breachMessage="user "+nick+" used one of the banned words: "+word;
 
                         try (FileWriter fileWriter = new FileWriter
-                                ("C:\\Users\\lenovo\\IdeaProjects\\utp_project2git\\src\\Rule_Breach_History.txt", true)) {
+                                ("src/Rule_Breach_History.txt", true)) {
                             fileWriter.write(breachMessage+"\n");
                             System.out.println(breachMessage);
                         } catch (IOException e) {

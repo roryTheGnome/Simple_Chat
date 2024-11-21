@@ -5,3 +5,6 @@ user test1 used one of the banned words: HI
 user test used one of the banned words: hi
 user test123 used one of the banned words: hi
 user test used one of the banned words: hi
+user aaaa used one of the banned words: hi
+user testnew used one of the banned words: hi
+user testinput used one of the banned words: hi
