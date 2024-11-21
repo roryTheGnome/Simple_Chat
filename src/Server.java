@@ -161,6 +161,7 @@ public class Server implements Runnable{
 
         private Socket client;
         private String nick;
+        private String statue;
         private BufferedReader in;
         //https://www.geeksforgeeks.org/java-io-bufferedreader-class-java/
         private PrintWriter out;
@@ -187,27 +188,26 @@ public class Server implements Runnable{
             try{
                 out = new PrintWriter(client.getOutputStream(), true);
                 in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                //out.println("stuff");  //how to speak to a client
-                //in.readLine();         //how to get message from the client
+
                 out.println("Enter a ncikname: ");
                 System.out.println("Connection received, awaiting nickname...");
-                nick = in.readLine();//play around with this part(put rules to creating nicks)
-                //maybe create a file with user data like nick and password
-                System.out.println(nick+ " is in!"); //this one is for server
-                //maybe add a file for records??
+                nick = in.readLine();
+                statue="";
+                System.out.println(nick+ " is in!");
 
-                announcement(nick," is online!!!");
+                announcement(statue+nick," is online!!!");
                 out.println("Enter *help* inn order to get to the help desk");
 
                 String message=null;
                 while((message=in.readLine())!=null){
                     if(message.startsWith("*quit*")){
-                        announcement(nick," is offline!!!");
+                        announcement(statue+nick," is offline!!!");
                         System.out.println(nick+" is offline!");
                         killSwitch();
                     } else if (message.startsWith("*openhelpdesk*")) {
                         out.println("COMMAND LIST");
                         out.println("*exit*        exit");
+                        out.println("*st*          change your statue");
                         out.println("*help*        shows command list");
                         out.println("*bList*       shows the banned words list");
                         out.println("*rooms*       shows room list");
@@ -216,6 +216,23 @@ public class Server implements Runnable{
                         out.println("*but*         send message to all but xxxx");  //TODO
                         out.println("*all/room*    shows the list of people online in the room");
                         out.println("*all*         shows the list of all people online");
+                    }else if(message.startsWith("*st*")) {
+                        out.println("Statue List:");
+                        out.println("[0] for happy \n [1] for netural " +
+                                "\n [2] for bored  \n [3] for tired " +
+                                "\n [4] for duck face \n [5] for confused" +
+                                "\n [6] for cool");
+                        String choosen=in.readLine();
+                        switch(choosen){
+                            case "0":switchStatue(0);break;
+                            case "1":switchStatue(1);break;
+                            case "2":switchStatue(2);break;
+                            case "3":switchStatue(3);break;
+                            case "4":switchStatue(4);break;
+                            case "5":switchStatue(5);break;
+                            case "6":switchStatue(6);break;
+                            default:out.println("no such statue exist");break;
+                        }
                     }else if (message.startsWith("*all*")){
                         showEmAll(everyoneOnline,"Everyone Online: ");
                     }else if(message.startsWith("*all/room*")){
@@ -265,10 +282,10 @@ public class Server implements Runnable{
                             out.println("Enter [1] to set the reciver group as everybody online");
                             String reciverG=in.readLine();
                             if (reciverG.equals("1")){
-                                broadcastBut(nick,multiMessage,"all",enemyList);
+                                broadcastBut(statue+nick,multiMessage,"all",enemyList);
                             }
                             else{
-                                broadcastBut(nick,multiMessage,currentRoom,enemyList);
+                                broadcastBut(statue+nick,multiMessage,currentRoom,enemyList);
                             }
                         }
                     }else if(message.startsWith("*mdm*")){
@@ -287,7 +304,7 @@ public class Server implements Runnable{
                                 } else{
                                     for(ConnectionHandler c:peopleOnline){
                                         if(c.nick.equals(reciver)){
-                                            c.sendMessage(nick+"(dm): "+multiMessage);
+                                            c.sendMessage(statue+nick+"(dm): "+multiMessage);
                                             bbb=false;
                                         }
                                     }
@@ -309,7 +326,7 @@ public class Server implements Runnable{
                                 if (containsBannedWords(message)) {
                                     out.println("Message contains banned words and will not be sent.");
                                 }
-                                else {c.sendMessage(nick+"(dm): "+dm);}
+                                else {c.sendMessage(statue+nick+"(dm): "+dm);}
                                 bb=false;
                                 out.println("message sented succsessfully");
                             }
@@ -319,13 +336,13 @@ public class Server implements Runnable{
                         }
                     }else if (message.startsWith("*rooms*")) {
                         out.println("//           home");
-                        out.println("/comedy/     comedy room");
-                        out.println("/random/     random stuff room");
-                        out.println("/science/    science room");
-                        out.println("/politics/   politics room");
-                        out.println("/social/     social room");
-                        out.println("/tech/       tech room");
-                        out.println("/crypto/     crypto room");
+                        out.println("/cmdy/     comedy room");
+                        out.println("/r/     random stuff room");
+                        out.println("/sci/    science room");
+                        out.println("/p/   politics room");
+                        out.println("/s/     social room");
+                        out.println("/t/       tech room");
+                        out.println("/c/     crypto room");
                     } else if (message.startsWith("/")) {
                         switchRoom(message);
                     }
@@ -333,7 +350,7 @@ public class Server implements Runnable{
                         out.println("Message contains banned words and will not be sent.");
                     }
                     else{
-                    broadcast(nick,message,currentRoom);}
+                    broadcast(statue+nick,message,currentRoom);}
                 }
             } catch (IOException e) {
                 killSwitch();
@@ -357,11 +374,11 @@ public class Server implements Runnable{
             broadcast(nick," has left the room!",currentRoom);
 
             switch(message){
-                case "/comedy/":
+                case "/cmdy/":
                     comedyOnline.add(this);
                     currentRoom="comedy";
                     break;
-                case "/science/":
+                case "/sci/":
                     scienceOnline.add(this);
                     currentRoom="science";
                     break;
@@ -369,7 +386,7 @@ public class Server implements Runnable{
                     peopleOnline.add(this);
                     currentRoom="home";
                     break;
-                case "/random/":
+                case "/r/":
                     randomOnline.add(this);
                     currentRoom="random";
                     for(ConnectionHandler c : randomOnline){
@@ -380,7 +397,7 @@ public class Server implements Runnable{
                                 "Never gonna say goodbye\n" +
                                 "Never gonna tell a lie and hurt you");
                         try {
-                            Thread.sleep(3 * 1000);
+                            Thread.sleep(1 * 1000);
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                         }
@@ -413,7 +430,7 @@ public class Server implements Runnable{
                                 "⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀\n" +
                                 "⠀⠀⠈⢿⣿⣿⣿⣿⣿⣿⣿⣿⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠛⠛⠛⠁⡇⠟⢿⣿⣿⣿⣿⣿⣿⣿⣧⡀⠀⠀");
                         try {
-                            Thread.sleep(3 * 1000);
+                            Thread.sleep(2 * 1000);
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                         }
@@ -449,7 +466,7 @@ public class Server implements Runnable{
                                 "⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣟⡟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀\n" +
                                 "⠀⠀⠀⠀⠀⠀⣡⣿⣿⣿⣿⡗⣮⢻⣽⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀");
                         try {
-                            Thread.sleep(3 * 1000);
+                            Thread.sleep(2 * 1000);
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                         }
@@ -483,19 +500,19 @@ public class Server implements Runnable{
 
                     }
                     break;
-                case "/politics/":
+                case "/p/":
                     politicsOnline.add(this);
                     currentRoom="politics";
                     break;
-                case "/social/":
+                case "/s/":
                     socialOnline.add(this);
                     currentRoom="social";
                     break;
-                case "/tech/":
+                case "/t/":
                     techOnline.add(this);
                     currentRoom="tech";
                     break;
-                case "/crypto/":
+                case "/c/":
                     cryptoOnline.add(this);
                     currentRoom="crypto";
                     break;
@@ -505,6 +522,18 @@ public class Server implements Runnable{
             broadcast(nick," has entered the room",currentRoom);
             System.out.println(nick+" entered the "+currentRoom+" room");
 
+        }
+
+        public void switchStatue(int i){
+            switch(i){
+                case 0:statue="(◉‿◉)";break;
+                case 1:statue="(ㆆ _ ㆆ)";break;
+                case 2:statue="(-_-)";break;
+                case 3:statue="(0__#)";break;
+                case 4:statue="(・3・)";break;
+                case 5:char c='\\';statue="¯"+c+"(°_o)/¯";break;
+                case 6:statue="(⌐■_■)";break;
+            }
         }
 
         private boolean containsBannedWords(String message) {
@@ -546,7 +575,7 @@ public class Server implements Runnable{
         public void showEmAll(ArrayList<ConnectionHandler> peopleList,String title){
             out.println(title);
             for(ConnectionHandler c : peopleList){
-                out.println(c.nick);
+                out.println(c.statue+" "+c.nick);
             }
         }
     }
@@ -556,16 +585,10 @@ public class Server implements Runnable{
         public void run() {
             try{
                 Scanner scnn=new Scanner(System.in);
+                System.out.println("Awaiting input...");
                 while(b){
-                    System.out.println("Awaiting input...");
                     String message=scnn.nextLine();
-                    if(message.equals("*kill*")) {
-                        scnn.close();
-                        killSwitch();
-                        //break;//TODO added later
-                    }else{
-                        announcement("!SERVER ANNOUNCEMENT!: ",message);
-                    }
+                    announcement("!SERVER ANNOUNCEMENT!: ",message);
                 }
             } catch (Exception e) {
                 killSwitch();
@@ -578,10 +601,3 @@ public class Server implements Runnable{
         Elysium.run();
     }
 }
-
-//TODO show banned words in helpdesk            DONE
-//TODO group chat                               DONE
-//TODO make announcements                       DONE
-//TODO make announcemnets from server           DONE
-//TODO send all but *****                       DONE
-
